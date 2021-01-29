@@ -1,0 +1,56 @@
+version: "3.8"
+
+# # # # # # # # # # # # NETWORK # # # # # # # # # # # # #
+networks:
+
+  app_net:
+    driver: bridge
+    driver_opts:
+      com.docker.network.enable_ipv6: "false"
+    ipam:
+      driver: default
+      config:
+        - subnet: ${DOCKER_SUBNET}
+
+# # # # # # # # # # # # SERVICES # # # # # # # # # # # # #
+services:
+
+    haproxy:
+      container_name: haproxy
+      image: haproxy-custom
+      build:
+        context: .
+        dockerfile: haproxy.Dockerfile
+      networks:
+        app_net:
+          ipv4_address: ${HAPROXY_IP}
+      ports:
+        - ${HAPROXY_EXPOSED_PORT}:${HAPROXY_FRONTEND_PORT}
+      environment:
+        FRONTEND_PORT: ${HAPROXY_FRONTEND_PORT}
+        APP1_ADDRESS: ${APP1_IP}:${TOMCAT_PORT}
+        APP2_ADDRESS: ${APP2_IP}:${TOMCAT_PORT}
+
+    app1:
+      container_name: app1
+      image: my-java-app
+      build:
+        context: .
+        dockerfile: app.Dockerfile
+      networks:
+        app_net:
+          ipv4_address: ${APP1_IP}
+      expose:
+        - ${TOMCAT_PORT}
+
+    app2:
+      container_name: app2
+      image: my-java-app
+      build:
+        context: .
+        dockerfile: app.Dockerfile
+      networks:
+        app_net:
+          ipv4_address: ${APP2_IP}
+      expose:
+        - ${TOMCAT_PORT}
